@@ -1,0 +1,11 @@
+import { build } from 'esbuild';
+import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
+await mkdir('dist/server', { recursive: true });
+await mkdir('dist/.openai', { recursive: true });
+const client = await build({ entryPoints: ['src/client.js'], bundle: true, minify: true, write: false, format: 'iife' });
+const css = await readFile('src/style.css', 'utf8');
+const html = (await readFile('src/index.html', 'utf8')).replace('/* APP_CSS */', css).replace('/* APP_JS */', client.outputFiles[0].text);
+await build({ entryPoints: ['worker/index.js'], bundle: true, format: 'esm', outfile: 'dist/server/index.js', define: { '__PAGE__': JSON.stringify(html) } });
+await copyFile('.openai/hosting.json', 'dist/.openai/hosting.json');
+await writeFile('dist/preview.html', html);
+console.log('Built Train to Earn');
